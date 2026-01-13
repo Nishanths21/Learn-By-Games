@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>History Challenge</title>
+    <style>
+        body{font-family:'Georgia', serif; background:#fff8e1; padding:20px; text-align:center;}
+        .parchment{background:#fff; border:1px solid #d7ccc8; padding:40px; max-width:600px; margin:20px auto; box-shadow:5px 5px 15px rgba(0,0,0,0.1); position:relative;}
+        .parchment:before { content:""; position:absolute; top:0; left:0; width:100%; height:5px; background:#8d6e63;}
+        .options-grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px; }
+        button{padding:15px; background:#795548; color:white; border:none; font-family:'Segoe UI', sans-serif; cursor:pointer; font-size:1rem;}
+        button:hover{background:#5d4037;}
+    </style>
+</head>
+<body>
+    <h2>📜 Time Traveler: History</h2>
+    <div class="parchment">
+        <p id="q" style="font-size:1.3em; line-height:1.6;">Loading history from CSV...</p>
+        
+        <div class="options-grid">
+            <button id="b0" onclick="c(0)"></button>
+            <button id="b1" onclick="c(1)"></button>
+            <button id="b2" onclick="c(2)"></button>
+            <button id="b3" onclick="c(3)"></button>
+        </div>
+    </div>
+    <br><a href="/" style="color:#5d4037; text-decoration:none;">← Back to Menu</a>
+
+    <script>
+        let ans = -1;
+        async function load(){
+            // ASK ONLY FOR HISTORY
+            let r = await fetch('/api/get_question?subject=history');
+            let d = await r.json();
+            
+            if(!d.question) { document.getElementById('q').innerText = "No history questions found in CSV!"; return; }
+
+            document.getElementById('q').innerText = d.question;
+            for(let i=0; i<4; i++) document.getElementById('b'+i).innerText = d.options[i];
+            ans = d.answer;
+        }
+
+        function c(i){
+            if(i === ans) { alert("Correct! History made."); load(); }
+            else { alert("Incorrect!"); }
+        }
+        load();
+    </script>
+</body>
+</html>

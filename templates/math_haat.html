@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Math Haat</title>
+    <style>
+        body{text-align:center;font-family:'Segoe UI', sans-serif;background:#fff3e0; padding:20px;}
+        .card{background:white; max-width:400px; margin:0 auto; padding:30px; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+        input{font-size:1.5rem; width:120px; padding:5px; text-align:center; border:2px solid #ddd; border-radius:5px;}
+        .big-text{font-size:1.4em; margin:20px 0;}
+        button{background:#e67e22; color:white; padding:10px 30px; border:none; border-radius:5px; font-size:1.2em; cursor:pointer; margin-top:10px;}
+    </style>
+</head>
+<body>
+    <h2>🥦 Sunday Market (Haat)</h2>
+    <div class="card">
+        <p>Calculate the total bill:</p>
+        <div class="big-text">
+            <span id="qty" style="color:#d35400; font-weight:bold">...</span> kg of 
+            <span id="item" style="font-weight:bold">...</span> <br>
+            @ ₹<span id="price" style="color:#27ae60; font-weight:bold">...</span> /kg
+        </div>
+        <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+        <p>Total Cost: ₹ <input type="number" id="ans"></p>
+        <button onclick="check()">Check Bill</button>
+        <h3 id="res"></h3>
+    </div>
+    <br><a href="/" style="color:#795548">← Back to Menu</a>
+
+    <script>
+        let cor=0;
+        async function load(){
+            let d=await(await fetch('/api/math/problem')).json(); 
+            document.getElementById('item').innerText=d.item;
+            document.getElementById('qty').innerText=d.quantity;
+            document.getElementById('price').innerText=d.price_per_kg;
+            cor=d.correct_answer;
+            document.getElementById('ans').value='';
+            document.getElementById('res').innerText='';
+            document.getElementById('ans').focus();
+        }
+        function check(){
+            let v=parseInt(document.getElementById('ans').value); 
+            if(v===cor){
+                document.getElementById('res').innerText="✅ Correct! Good calculation.";
+                document.getElementById('res').style.color="green";
+                setTimeout(load,1500);
+            }else{
+                document.getElementById('res').innerText="❌ Wrong! Try again.";
+                document.getElementById('res').style.color="red";
+            }
+        }
+        load();
+    </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LearnByGames Arcade</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background-color: #f0f2f5; padding: 40px; }
+        h1 { color: #2c3e50; margin-bottom: 40px; font-size: 2.5em; text-transform: uppercase; letter-spacing: 2px; }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 5px solid transparent;
+        }
+        .card:hover { transform: translateY(-7px); box-shadow: 0 12px 20px rgba(0,0,0,0.15); border-bottom-color: #2196f3; }
+        .icon { font-size: 50px; margin-bottom: 15px; }
+        h2 { margin: 10px 0; font-size: 22px; color: #333; }
+        p { color: #666; font-size: 15px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <h1>🎮 LearnByGames Arcade</h1>
+    <div class="grid-container">
+        <a href="/math" class="card"><span class="icon">🧮</span><h2>Math Haat</h2><p>Shop for veggies & calculate prices!</p></a>
+        <a href="/physics" class="card"><span class="icon">🏏</span><h2>Physics Cricket</h2><p>Calculate force & angle to hit a six!</p></a>
+        <a href="/biology" class="card"><span class="icon">🌱</span><h2>Bio Farm</h2><p>Protect crops using nature vs chemicals.</p></a>
+        <a href="/tech" class="card"><span class="icon">🚜</span><h2>Tech Tractor</h2><p>Code the tractor's path through the grid.</p></a>
+        <a href="/history" class="card"><span class="icon">📜</span><h2>History Story</h2><p>Make choices in historical India.</p></a>
+        <a href="/quiz" class="card"><span class="icon">🧠</span><h2>Quiz Party</h2><p>Test your general knowledge!</p></a>
+    </div>
+</body>
+</html>

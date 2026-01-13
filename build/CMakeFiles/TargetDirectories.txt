@@ -1,0 +1,3 @@
+/home/nishanth/Documents/LearnByGames/build/CMakeFiles/LearnByGames.dir
+/home/nishanth/Documents/LearnByGames/build/CMakeFiles/edit_cache.dir
+/home/nishanth/Documents/LearnByGames/build/CMakeFiles/rebuild_cache.dir

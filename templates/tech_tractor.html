@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tech Tractor</title>
+    <style>
+        body{font-family:'Courier New', monospace; text-align:center; background:#eceff1; padding:20px;}
+        #grid{display:grid; grid-template-columns:repeat(3,60px); gap:5px; justify-content:center; margin:20px auto; background:white; padding:10px; width:fit-content; border-radius:5px;}
+        .cell{width:60px; height:60px; background:#f5f5f5; border:1px solid #ddd; display:flex; align-items:center; justify-content:center; font-size:2rem;}
+        .mud{background:#795548;} .goal{background:#4caf50;}
+        .cmd-btn{padding:15px; font-size:1.5rem; margin:5px; cursor:pointer; background:white; border:1px solid #ccc; border-radius:5px;}
+        .cmd-btn:hover{background:#eee;}
+    </style>
+</head>
+<body>
+    <h2>🚜 Tractor Logic</h2>
+    <p>Guide the tractor to the crop (🌾) avoiding mud (🟫)</p>
+    
+    <div id="grid"></div>
+    
+    <div style="background:#263238; color:#00e676; padding:15px; width:300px; margin:0 auto; border-radius:5px; text-align:left; min-height:40px;">
+        > <span id="code"></span><span style="animation:blink 1s infinite">_</span>
+    </div>
+
+    <div style="margin-top:20px;">
+        <button class="cmd-btn" onclick="add(0)">⬆️</button><br>
+        <button class="cmd-btn" onclick="add(2)">⬅️</button>
+        <button class="cmd-btn" onclick="add(3)">➡️</button><br>
+        <button class="cmd-btn" onclick="add(1)">⬇️</button>
+    </div>
+
+    <button onclick="run()" style="background:#d84315; color:white; padding:15px; width:200px; margin-top:20px; border:none; font-weight:bold; cursor:pointer;">RUN PROGRAM ▶</button>
+    <h3 id="res"></h3>
+    <br><a href="/" style="text-decoration:none">Back to Menu</a>
+
+    <script>
+        let q=[]; const map=[[2,0,0],[1,1,0],[0,0,3]];
+        function draw(){
+            document.getElementById('grid').innerHTML='';
+            map.forEach(r=>r.forEach(c=>{
+                let d=document.createElement('div'); d.className='cell';
+                if(c==1)d.classList.add('mud'); if(c==2)d.innerText='🚜'; if(c==3)d.innerText='🌾';
+                document.getElementById('grid').appendChild(d);
+            }));
+        }
+        function add(v){ q.push(v); document.getElementById('code').innerText+=['⬆️','⬇️','⬅️','➡️'][v]+' '; }
+        async function run(){
+            let r=await fetch('/api/tech/run',{method:'POST',body:JSON.stringify({commands:q})});
+            let s=(await r.json()).status;
+            document.getElementById('res').innerText=s;
+            document.getElementById('res').style.color = s==="WIN"?"green":"red";
+            q=[]; document.getElementById('code').innerText='';
+        }
+        draw();
+    </script>
+    <style>@keyframes blink{50%{opacity:0}}</style>
+</body>
+</html>
