@@ -1,59 +1,202 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tech Tractor</title>
+    <title>The Glitch Hacker</title>
     <style>
-        body{font-family:'Courier New', monospace; text-align:center; background:#eceff1; padding:20px;}
-        #grid{display:grid; grid-template-columns:repeat(3,60px); gap:5px; justify-content:center; margin:20px auto; background:white; padding:10px; width:fit-content; border-radius:5px;}
-        .cell{width:60px; height:60px; background:#f5f5f5; border:1px solid #ddd; display:flex; align-items:center; justify-content:center; font-size:2rem;}
-        .mud{background:#795548;} .goal{background:#4caf50;}
-        .cmd-btn{padding:15px; font-size:1.5rem; margin:5px; cursor:pointer; background:white; border:1px solid #ccc; border-radius:5px;}
-        .cmd-btn:hover{background:#eee;}
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        body {
+            background-color: #000;
+            font-family: 'VT323', monospace;
+            color: #0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* TERMINAL WINDOW */
+        .terminal {
+            width: 90%;
+            max-width: 600px;
+            border: 2px solid #0f0;
+            background: rgba(0, 20, 0, 0.9);
+            box-shadow: 0 0 20px #0f0;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* MATRIX RAIN BG (Simple CSS) */
+        .matrix-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,50,0,0.2) 0px, transparent 2px);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* HEALTH BARS */
+        .hud-row { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 1.5em; }
+        
+        .bar-container { width: 45%; border: 1px solid #0f0; padding: 2px; }
+        .hp-fill { height: 15px; background: #0f0; width: 100%; transition: width 0.5s; }
+        .enemy-fill { background: #f00; }
+
+        /* ASCII ART */
+        .enemy-sprite {
+            font-size: 0.8em; white-space: pre; color: #f00; text-align: center;
+            margin: 20px 0;
+            text-shadow: 2px 0 0 red, -2px 0 0 blue; /* Glitch effect */
+        }
+
+        /* QUESTION AREA */
+        .console-log {
+            border-top: 1px dashed #0f0;
+            margin-top: 10px;
+            padding-top: 10px;
+            min-height: 100px;
+            font-size: 1.3em;
+        }
+        
+        /* INPUTS */
+        .cmd-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 20px; }
+        
+        .hack-btn {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            font-family: 'VT323', monospace;
+            font-size: 1.4em;
+            cursor: pointer;
+            text-align: left;
+        }
+        .hack-btn:hover { background: #0f0; color: #000; }
+        .hack-btn:before { content: "> "; }
+
+        /* ANIMATION CLASSES */
+        .shake { animation: shake 0.5s; }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-3px, -3px); } 100% { transform: translate(0, 0); } }
+
     </style>
 </head>
 <body>
-    <h2>🚜 Tractor Logic</h2>
-    <p>Guide the tractor to the crop (🌾) avoiding mud (🟫)</p>
-    
-    <div id="grid"></div>
-    
-    <div style="background:#263238; color:#00e676; padding:15px; width:300px; margin:0 auto; border-radius:5px; text-align:left; min-height:40px;">
-        > <span id="code"></span><span style="animation:blink 1s infinite">_</span>
+
+<div class="matrix-bg"></div>
+
+<div class="terminal" id="term">
+    <div class="hud-row">
+        <div>
+            USER_INTEGRITY
+            <div class="bar-container"><div class="hp-fill" id="user-hp"></div></div>
+        </div>
+        <div style="text-align:right;">
+            FIREWALL_STATUS
+            <div class="bar-container"><div class="hp-fill enemy-fill" id="enemy-hp"></div></div>
+        </div>
     </div>
 
-    <div style="margin-top:20px;">
-        <button class="cmd-btn" onclick="add(0)">⬆️</button><br>
-        <button class="cmd-btn" onclick="add(2)">⬅️</button>
-        <button class="cmd-btn" onclick="add(3)">➡️</button><br>
-        <button class="cmd-btn" onclick="add(1)">⬇️</button>
+    <div class="enemy-sprite" id="boss-art">
+   .:: SYSTEM LOCK ::.
+  / [ACCESS DENIED] \
+ |   { 0101010 }     |
+  \  [#%$ ERROR]    /
+   '::.............::'
     </div>
 
-    <button onclick="run()" style="background:#d84315; color:white; padding:15px; width:200px; margin-top:20px; border:none; font-weight:bold; cursor:pointer;">RUN PROGRAM ▶</button>
-    <h3 id="res"></h3>
-    <br><a href="/" style="text-decoration:none">Back to Menu</a>
+    <div class="console-log" id="log">
+        Initialising exploit sequence...<br>
+        Waiting for input...
+    </div>
 
-    <script>
-        let q=[]; const map=[[2,0,0],[1,1,0],[0,0,3]];
-        function draw(){
-            document.getElementById('grid').innerHTML='';
-            map.forEach(r=>r.forEach(c=>{
-                let d=document.createElement('div'); d.className='cell';
-                if(c==1)d.classList.add('mud'); if(c==2)d.innerText='🚜'; if(c==3)d.innerText='🌾';
-                document.getElementById('grid').appendChild(d);
-            }));
+    <div class="cmd-grid" id="options-box"></div>
+</div>
+
+<script>
+    let userHp = 100;
+    let enemyHp = 100;
+    
+    // Each correct answer does 34 damage (3 hits to kill)
+    const DAMAGE = 34; 
+    const PENALTY = 34;
+
+    async function nextPacket() {
+        const log = document.getElementById("log");
+        const optBox = document.getElementById("options-box");
+        
+        log.innerHTML = "Decrypting security packet...<br>_";
+        optBox.innerHTML = "";
+
+        try {
+            const res = await fetch(`/api/ai/get_question?subject=Computer Science&difficulty=Medium`);
+            const data = await res.json();
+            
+            log.innerHTML = `<span style="color:#fff">QUERY:</span> ${data.question}`;
+
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement("button");
+                btn.className = "hack-btn";
+                btn.innerText = `EXECUTE: ${opt}`;
+                btn.onclick = () => runExploit(index, data.answer);
+                optBox.appendChild(btn);
+            });
+        } catch(e) {
+            log.innerText = "CRITICAL FAILURE: Network unreachable.";
         }
-        function add(v){ q.push(v); document.getElementById('code').innerText+=['⬆️','⬇️','⬅️','➡️'][v]+' '; }
-        async function run(){
-            let r=await fetch('/api/tech/run',{method:'POST',body:JSON.stringify({commands:q})});
-            let s=(await r.json()).status;
-            document.getElementById('res').innerText=s;
-            document.getElementById('res').style.color = s==="WIN"?"green":"red";
-            q=[]; document.getElementById('code').innerText='';
+    }
+
+    function runExploit(selected, correct) {
+        const term = document.getElementById("term");
+        
+        if (selected === correct) {
+            // HIT
+            enemyHp -= DAMAGE;
+            updateBars();
+            printLog(">> Exploit SUCCESS. Firewall damaged.", "#0f0");
+            
+            if (enemyHp <= 0) {
+                document.getElementById("boss-art").innerHTML = "<br>SYSTEM BREACHED<br>ACCESS GRANTED";
+                document.getElementById("boss-art").style.color = "#0f0";
+                setTimeout(() => {
+                    alert("HACK COMPLETE. YOU ARE IN.");
+                    location.reload();
+                }, 1000);
+                return;
+            }
+
+        } else {
+            // MISS
+            userHp -= PENALTY;
+            updateBars();
+            term.classList.add("shake");
+            setTimeout(() => term.classList.remove("shake"), 500);
+            printLog(">> ERROR. Trace detected! Integrity lost.", "#f00");
+
+            if (userHp <= 0) {
+                setTimeout(() => {
+                    alert("CONNECTION TERMINATED. TRACED BY FBI.");
+                    location.reload();
+                }, 500);
+                return;
+            }
         }
-        draw();
-    </script>
-    <style>@keyframes blink{50%{opacity:0}}</style>
+        
+        setTimeout(nextPacket, 1500);
+    }
+
+    function updateBars() {
+        document.getElementById("user-hp").style.width = Math.max(0, userHp) + "%";
+        document.getElementById("enemy-hp").style.width = Math.max(0, enemyHp) + "%";
+    }
+
+    function printLog(msg, color) {
+        document.getElementById("log").innerHTML += `<br><span style="color:${color}">${msg}</span>`;
+    }
+
+    nextPacket();
+</script>
 </body>
 </html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LearnByGames - Access</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Animated Circles Background */
+        .circle { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); z-index: 0; animation: float 10s infinite alternate; }
+        .c1 { width: 300px; height: 300px; top: -50px; left: -50px; }
+        .c2 { width: 200px; height: 200px; bottom: 50px; right: -50px; animation-delay: -5s; }
+
+        @keyframes float { from { transform: translate(0,0); } to { transform: translate(20px, 40px); } }
+
+        /* Glass Card */
+        .container {
+            position: relative; z-index: 10;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border-radius: 20px;
+            width: 400px;
+            padding: 40px;
+            text-align: center;
+            color: white;
+        }
+
+        h2 { margin-bottom: 20px; font-weight: 600; letter-spacing: 1px; }
+
+        .input-group { position: relative; margin-bottom: 25px; text-align: left; }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            outline: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+        
+        .input-group input::placeholder { color: rgba(255,255,255,0.7); }
+        .input-group input:focus { background: rgba(255,255,255,0.3); box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+
+        /* Buttons */
+        .btn {
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            background: #fff; color: #1e3c72; font-weight: bold; font-size: 16px;
+            cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        .btn:hover { transform: scale(1.02); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+
+        .toggle-text { margin-top: 20px; font-size: 0.9em; color: rgba(255,255,255,0.8); }
+        .toggle-text span { color: #ffeb3b; cursor: pointer; font-weight: bold; text-decoration: underline; }
+
+        /* Error/Success Messages */
+        .msg { margin-bottom: 15px; padding: 10px; border-radius: 5px; font-size: 0.9em; display: none; }
+        .error { background: rgba(255, 0, 0, 0.4); border: 1px solid red; }
+        .success { background: rgba(0, 255, 0, 0.4); border: 1px solid lime; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="circle c1"></div>
+    <div class="circle c2"></div>
+
+    <div class="container">
+        <h2 id="title">Welcome Back</h2>
+        
+        <div id="msg-box" class="msg"></div>
+
+        <form id="auth-form">
+            <div class="input-group">
+                <input type="text" id="username" placeholder="Username" required autocomplete="off">
+            </div>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="Password" required>
+            </div>
+            
+            <button type="submit" class="btn" id="submit-btn">Login</button>
+        </form>
+
+        <p class="toggle-text">
+            <span id="mode-toggle" onclick="toggleMode()">New here? Create Account</span>
+        </p>
+    </div>
+
+    <script>
+        let isLoginMode = true;
+
+        function toggleMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById("title").innerText = isLoginMode ? "Welcome Back" : "Create Account";
+            document.getElementById("submit-btn").innerText = isLoginMode ? "Login" : "Sign Up";
+            document.getElementById("mode-toggle").innerText = isLoginMode ? "New here? Create Account" : "Already have an account? Login";
+            document.getElementById("msg-box").style.display = 'none';
+        }
+
+        document.getElementById("auth-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
+            const msgBox = document.getElementById("msg-box");
+            
+            // UX: Loading State
+            const btn = document.getElementById("submit-btn");
+            const originalText = btn.innerText;
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+
+            const endpoint = isLoginMode ? "/api/auth/login" : "/api/auth/register";
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ u: user, p: pass })
+                });
+
+                const data = await res.json();
+
+                msgBox.style.display = "block";
+                if (data.status === "success") {
+                    msgBox.className = "msg success";
+                    msgBox.innerText = isLoginMode ? "Login Successful!" : "Account Created! Logging in...";
+                    setTimeout(() => window.location.href = "/", 1000);
+                } else {
+                    msgBox.className = "msg error";
+                    msgBox.innerText = data.message || "Authentication failed.";
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                msgBox.className = "msg error";
+                msgBox.innerText = "Server Error. Is the backend running?";
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(console.error);
+        }
+    </script>
+</body>
+</html>

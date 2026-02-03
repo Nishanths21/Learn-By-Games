@@ -806,4 +806,5 @@ CMakeFiles/LearnByGames.dir/main.cpp.o: \
  /home/nishanth/Documents/LearnByGames/include/crow_source/include/crow/compression.h \
  /home/nishanth/Documents/LearnByGames/include/crow_source/include/crow/http_server.h \
  /home/nishanth/Documents/LearnByGames/include/crow_source/include/crow/version.h \
- /home/nishanth/Documents/LearnByGames/include/crow_source/include/crow/app.h
+ /home/nishanth/Documents/LearnByGames/include/crow_source/include/crow/app.h \
+ /usr/include/sqlite3.h

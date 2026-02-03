@@ -3,64 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Quiz Party</title>
+    <title>AI Tutor Mode</title>
     <style>
-        body,html{margin:0; height:100%; font-family:'Segoe UI', sans-serif;}
-        #q-container{height:35%; background:#2c3e50; color:white; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center;}
-        #category-tag{background:#f1c40f; color:#333; padding:5px 15px; border-radius:20px; font-weight:bold; font-size:0.8rem; margin-bottom:15px; text-transform:uppercase;}
-        #question{font-size:1.4em; max-width:800px; line-height:1.4;}
-        #g{height:65%; display:flex; flex-wrap:wrap;}
-        .opt-btn{width:50%; height:50%; border:none; color:white; font-size:1.2em; padding:10px; cursor:pointer; transition:opacity 0.2s;}
-        .opt-btn:active{opacity:0.8;}
-        @media (max-width: 600px) { .opt-btn{width:100%; height:25%;} }
+        body,html{margin:0; height:100%; font-family:'Segoe UI', sans-serif; background:#f0f2f5;}
+        
+        /* Top Bar */
+        #controls { padding:15px; background:#2c3e50; color:white; display:flex; gap:10px; justify-content:center; align-items:center; }
+        input, select { padding:8px; border-radius:5px; border:none; }
+        button#start-btn { padding:8px 15px; background:#27ae60; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;}
+
+        /* Question Area */
+        #q-container { height:40%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; background:#fff;}
+        #question { font-size:1.5em; color:#333; max-width:800px; margin-bottom:10px;}
+        #status { font-style:italic; color:#7f8c8d; font-size:0.9em; height:20px;}
+
+        /* Options Area */
+        #g { height:50%; display:flex; flex-wrap:wrap; }
+        .opt-btn { width:50%; height:50%; border:none; color:white; font-size:1.2em; cursor:pointer; transition:0.2s; padding:20px;}
+        .opt-btn:disabled { opacity:0.6; cursor:not-allowed; }
+        
+        /* Explanation Modal */
+        #modal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:80%; max-width:500px; background:white; padding:20px; border-radius:10px; box-shadow:0 0 20px rgba(0,0,0,0.5); text-align:center; z-index:1000;}
+        #modal h3 { color:#c0392b; margin-top:0;}
+        #modal p { line-height:1.5; color:#444;}
+        #overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999;}
+
+        /* Colors */
+        .c0 { background:#e74c3c; } .c1 { background:#3498db; } 
+        .c2 { background:#f1c40f; color:#333; } .c3 { background:#2ecc71; }
     </style>
 </head>
 <body>
-    <div id="q-container">
-        <div id="category-tag">Loading...</div>
-        <div id="question">Fetching data from offline database...</div>
+
+    <div id="controls">
+        <span>Topic:</span>
+        <input type="text" id="topic" value="Space Science" placeholder="e.g. History">
+        <span>Level:</span>
+        <select id="diff">
+            <option value="Easy">Easy</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Hard">Hard</option>
+        </select>
+        <button id="start-btn" onclick="loadAIQuestion()">Generate Question</button>
     </div>
+
+    <div id="q-container">
+        <div id="status">Ready</div>
+        <div id="question">Enter a topic and click Generate to start AI.</div>
+    </div>
+
     <div id="g">
-        <button id="p0" class="opt-btn" style="background:#e74c3c" onclick="c(0)"></button>
-        <button id="p1" class="opt-btn" style="background:#3498db" onclick="c(1)"></button>
-        <button id="p2" class="opt-btn" style="background:#f1c40f; color:#333" onclick="c(2)"></button>
-        <button id="p3" class="opt-btn" style="background:#2ecc71" onclick="c(3)"></button>
+        <button id="p0" class="opt-btn c0" onclick="check(0)">A</button>
+        <button id="p1" class="opt-btn c1" onclick="check(1)">B</button>
+        <button id="p2" class="opt-btn c2" onclick="check(2)">C</button>
+        <button id="p3" class="opt-btn c3" onclick="check(3)">D</button>
+    </div>
+
+    <div id="overlay"></div>
+    <div id="modal">
+        <h3>❌ Incorrect</h3>
+        <p id="explanation-text">Asking AI Tutor for help...</p>
+        <button onclick="closeModal()" style="padding:10px 20px; background:#2c3e50; color:white; border:none; cursor:pointer; margin-top:10px;">Got it</button>
     </div>
 
     <script>
-        let a = -1;
+        let currentAnswer = -1;
+        let currentOptions = [];
+        let currentQuestionText = "";
 
-        async function loadQuestion(){
-            // Fetch ANY random question (no subject specified)
+        async function loadAIQuestion(){
+            // 1. UI Updates
+            document.getElementById('question').innerText = "";
+            document.getElementById('status').innerText = "🧠 AI is thinking... (This may take 3-5 seconds)";
+            disableButtons(true);
+
+            let subject = document.getElementById('topic').value;
+            let diff = document.getElementById('diff').value;
+
+            // 2. Fetch from C++ Backend
             try {
-                let response = await fetch('/api/get_question');
-                let data = await response.json();
-                
-                // Update the UI
-                document.getElementById('category-tag').innerText = data.subject || "General";
-                document.getElementById('question').innerText = data.question;
-                
-                // Update Buttons
-                for(let i=0; i<4; i++) {
-                    document.getElementById('p'+i).innerText = data.options[i];
+                let r = await fetch(`/api/ai/get_question?subject=${subject}&difficulty=${diff}`);
+                let d = await r.json();
+
+                if(d.question === "Error" || !d.question) {
+                    document.getElementById('question').innerText = "AI Brain Freeze. Try again.";
+                    return;
                 }
-                a = data.answer;
+
+                // 3. Populate Data
+                currentQuestionText = d.question;
+                currentOptions = d.options;
+                currentAnswer = d.answer;
+
+                document.getElementById('question').innerText = d.question;
+                for(let i=0; i<4; i++) {
+                    document.getElementById('p'+i).innerText = d.options[i];
+                }
+                
+                document.getElementById('status').innerText = "";
+                disableButtons(false);
+
             } catch(e) {
-                document.getElementById('question').innerText = "Error: Check if questions.csv exists in build folder!";
+                document.getElementById('status').innerText = "Connection Error.";
             }
         }
 
-        function c(i){
-            if(i === a) { 
-                alert("🎉 Correct!"); 
-                loadQuestion(); 
-            } else { 
-                alert("❌ Wrong Answer!"); 
+        async function check(selectedIdx){
+            if(selectedIdx === currentAnswer) {
+                // Correct: Flash Green and Load New
+                alert("🎉 Correct! Generating next question...");
+                loadAIQuestion(); 
+            } else {
+                // Wrong: Open Modal and ask AI Why
+                showModal();
+                fetchExplanation(selectedIdx);
             }
         }
-        
-        // Load first question on start
-        loadQuestion();
+
+        async function fetchExplanation(wrongIdx){
+            let wrongText = currentOptions[wrongIdx];
+            let correctText = currentOptions[currentAnswer];
+
+            let payload = {
+                question: currentQuestionText,
+                wrong: wrongText,
+                correct: correctText
+            };
+
+            let r = await fetch('/api/ai/explain', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            let d = await r.json();
+            document.getElementById('explanation-text').innerText = d.explanation;
+        }
+
+        function disableButtons(b){
+            for(let i=0; i<4; i++) document.getElementById('p'+i).disabled = b;
+        }
+
+        function showModal(){
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('modal').style.display = 'block';
+            document.getElementById('explanation-text').innerText = "Asking AI Tutor for explanation...";
+        }
+
+        function closeModal(){
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('modal').style.display = 'none';
+        }
     </script>
 </body>
 </html>

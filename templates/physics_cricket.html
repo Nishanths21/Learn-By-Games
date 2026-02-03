@@ -1,52 +1,188 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Physics Cricket</title>
+    <title>Physics Premier League</title>
     <style>
-        body{text-align:center;font-family:'Segoe UI', sans-serif;background:#e3f2fd; color:#333; padding:20px;}
-        .game-box{background:white; max-width:500px; margin:20px auto; padding:30px; border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-        .control-group{margin:20px 0; text-align:left;}
-        label{font-weight:bold; display:block; margin-bottom:5px;}
-        input[type=range]{width:100%; height:10px; border-radius:5px; background:#d3d3d3; outline:none;}
-        button{background:#2196f3; color:white; padding:15px 40px; border:none; border-radius:50px; font-size:18px; cursor:pointer; transition:transform 0.1s;}
-        button:active{transform:scale(0.95);}
-        #res{font-size:2em; margin:20px 0; min-height:1.2em;}
+        @import url('https://fonts.googleapis.com/css2?family=Teko:wght@400;600&family=Roboto:wght@400;700&display=swap');
+        
+        body { font-family: 'Roboto', sans-serif; background: #e0f7fa; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
+        .stadium {
+            background: linear-gradient(to bottom, #4fc3f7, #81c784);
+            width: 100%; max-width: 450px; border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); overflow: hidden; position: relative;
+            border: 5px solid #fff;
+        }
+
+        /* SCOREBOARD */
+        .scoreboard {
+            background: #263238; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center;
+            font-family: 'Teko', sans-serif; font-size: 1.5em; border-bottom: 4px solid #fdd835;
+        }
+        .runs-box { color: #fdd835; font-size: 1.8em; }
+        .wicket-box { color: #ff5252; }
+
+        /* FIELD ACTION */
+        .field {
+            height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative;
+        }
+        .batter { font-size: 5em; transition: transform 0.2s; cursor: pointer; }
+        .ball { font-size: 2em; position: absolute; opacity: 0; transition: all 0.5s; }
+        
+        /* COMMENTARY BOX (Question) */
+        .commentary-box {
+            background: white; padding: 20px; text-align: center; border-radius: 20px 20px 0 0;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.1); min-height: 300px;
+        }
+        .commentary-text { color: #546e7a; font-weight: bold; margin-bottom: 10px; font-style: italic; }
+        .question-text { font-size: 1.1em; color: #263238; margin-bottom: 20px; font-weight: bold; }
+
+        /* BUTTONS */
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn {
+            background: #eceff1; border: 2px solid #cfd8dc; padding: 15px; border-radius: 8px;
+            font-weight: bold; cursor: pointer; color: #37474f; transition: 0.2s;
+        }
+        .btn:hover { background: #cfd8dc; transform: scale(1.02); }
+        .btn.four { background: #4caf50; color: white; border-color: #2e7d32; }
+        .btn.out { background: #f44336; color: white; border-color: #b71c1c; }
+
+        /* ANIMATIONS */
+        @keyframes hit6 { 0% { bottom: 50px; left: 50%; opacity: 1; transform: scale(1); } 100% { bottom: 300px; left: 100%; opacity: 0; transform: scale(0.5); } }
+        .anim-six { animation: hit6 0.8s forwards; }
+        
+        @keyframes stumpOut { 0% { transform: rotate(0deg); } 20% { transform: rotate(-20deg); } 40% { transform: rotate(20deg); } 100% { transform: rotate(90deg) translateY(50px); opacity: 0; } }
+        .anim-out { animation: stumpOut 0.8s forwards; }
     </style>
 </head>
 <body>
-    <div class="game-box">
-        <h2>🏏 Gully Cricket Physics</h2>
-        <p>Adjust angle and power to hit a boundary!</p>
-        
-        <div class="control-group">
-            <label>Angle: <span id="av">45</span>°</label>
-            <input type="range" id="a" min="0" max="90" value="45" oninput="u()">
-        </div>
 
-        <div class="control-group">
-            <label>Power: <span id="fv">20</span> N</label>
-            <input type="range" id="f" min="10" max="40" value="20" oninput="u()">
-        </div>
-
-        <button onclick="hit()">HIT BALL! 🏏</button>
-        
-        <h2 id="res">Ready?</h2>
-        <p>Distance: <span id="dist">0</span> meters</p>
-        <a href="/" style="display:block; margin-top:20px; color:#666;">← Back to Menu</a>
+<div class="stadium">
+    <div class="scoreboard">
+        <div>TARGET: <span id="target">20</span></div>
+        <div class="runs-box"><span id="runs">0</span> / <span id="wickets" class="wicket-box">0</span></div>
     </div>
 
-    <script>
-        function u(){document.getElementById('av').innerText=document.getElementById('a').value;document.getElementById('fv').innerText=document.getElementById('f').value;}
-        async function hit(){
-            let r=await fetch('/api/physics/shot',{method:'POST',body:JSON.stringify({angle:parseFloat(document.getElementById('a').value),force:parseFloat(document.getElementById('f').value)})});
-            let d=await r.json(); 
-            document.getElementById('res').innerText=d.result; 
-            document.getElementById('dist').innerText=Math.round(d.distance);
-            // Color feedback
-            document.getElementById('res').style.color = d.result.includes("SIX") ? "#4caf50" : (d.result.includes("FOUR") ? "#ff9800" : "#f44336");
+    <div class="field">
+        <div class="ball" id="ball">⚾</div>
+        <div class="batter" id="player">🏏</div>
+        <div id="message" style="position:absolute; top:10px; font-weight:bold; color:white; text-shadow:1px 1px 3px black; font-size:1.5em; display:none;">SIX!</div>
+    </div>
+
+    <div class="commentary-box">
+        <div class="commentary-text" id="commentary">The bowler is running in...</div>
+        <div class="question-text" id="q-text">Loading match data...</div>
+        <div class="options-grid" id="options-box"></div>
+    </div>
+</div>
+
+<script>
+    let runs = 0;
+    let wickets = 0;
+    const TARGET = 20;
+    const MAX_WICKETS = 3;
+
+    // Different physics "bowlers" (topics)
+    const commentaryLines = [
+        "It's a tricky Physics question about Gravity!",
+        "Here comes a fast ball about Velocity!",
+        "A spinning question on Thermodynamics!",
+        "Can you solve this Optics bouncer?"
+    ];
+
+    async function loadBall() {
+        const qText = document.getElementById("q-text");
+        const optBox = document.getElementById("options-box");
+        const comm = document.getElementById("commentary");
+        const msg = document.getElementById("message");
+        
+        // Reset UI
+        msg.style.display = 'none';
+        document.getElementById("player").classList.remove("anim-out");
+        optBox.innerHTML = "";
+        
+        // Random "Bowler" commentary
+        comm.innerText = commentaryLines[Math.floor(Math.random() * commentaryLines.length)];
+
+        try {
+            // Using your robust backend
+            const res = await fetch(`/api/ai/get_question?subject=Physics&difficulty=Medium`);
+            const data = await res.json();
+
+            qText.innerText = data.question;
+            
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement("button");
+                btn.className = "btn";
+                btn.innerText = opt;
+                btn.onclick = () => playShot(index, data.answer, btn);
+                optBox.appendChild(btn);
+            });
+        } catch(e) {
+            qText.innerText = "Match rained out (Connection Error).";
         }
-    </script>
+    }
+
+    function playShot(selected, correct, btn) {
+        const player = document.getElementById("player");
+        const ball = document.getElementById("ball");
+        const msg = document.getElementById("message");
+        
+        // Disable buttons
+        document.querySelectorAll(".btn").forEach(b => b.disabled = true);
+
+        if (selected === correct) {
+            // HIT A 4 or 6 (Randomly)
+            const shotVal = Math.random() > 0.5 ? 6 : 4;
+            runs += shotVal;
+            
+            btn.classList.add("four"); // Green Button
+            msg.innerText = shotVal + " RUNS!";
+            msg.style.color = shotVal === 6 ? "#fdd835" : "#fff";
+            msg.style.display = "block";
+            
+            // Animation
+            ball.className = "ball anim-six"; 
+            setTimeout(() => ball.className = "ball", 800);
+
+        } else {
+            // WICKET
+            wickets++;
+            btn.classList.add("out"); // Red Button
+            msg.innerText = "OUT!";
+            msg.style.color = "#ff5252";
+            msg.style.display = "block";
+            
+            // Animation
+            player.classList.add("anim-out");
+        }
+
+        updateScore();
+        checkGameStatus();
+    }
+
+    function updateScore() {
+        document.getElementById("runs").innerText = runs;
+        document.getElementById("wickets").innerText = wickets;
+    }
+
+    function checkGameStatus() {
+        setTimeout(() => {
+            if (runs >= TARGET) {
+                alert("MATCH WON! 🏆 You chased the target!");
+                location.reload();
+            } else if (wickets >= MAX_WICKETS) {
+                alert("ALL OUT! ❌ You lost the match.");
+                location.reload();
+            } else {
+                loadBall();
+            }
+        }, 1500);
+    }
+
+    loadBall();
+</script>
 </body>
 </html>

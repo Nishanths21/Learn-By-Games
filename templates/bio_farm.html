@@ -1,54 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bio Quiz</title>
+    <title>Bio Farm Tycoon</title>
     <style>
-        body{text-align:center; font-family:'Segoe UI', sans-serif; background:#e8f5e9; padding:20px;}
-        .card{background:white; max-width:500px; margin:20px auto; padding:30px; border-radius:15px; border-left:10px solid #4caf50; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
-        .opt{display:block; width:100%; margin:10px 0; padding:15px; background:#fff; border:2px solid #4caf50; color:#2e7d32; border-radius:5px; font-size:16px; cursor:pointer;}
-        .opt:hover{background:#4caf50; color:white;}
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #81c784; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
+        .farm-container {
+            background: #fff; width: 100%; max-width: 480px; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0,64,0,0.2); position: relative;
+        }
+
+        /* SKY & SOIL */
+        .sky { height: 180px; background: #b3e5fc; position: relative; display: flex; justify-content: center; align-items: flex-end; }
+        .soil { height: 60px; background: #5d4037; border-top: 5px solid #795548; }
+
+        /* PLANT STAGES */
+        .plant { font-size: 6em; position: relative; bottom: -10px; transition: all 0.5s; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2)); }
+        
+        /* HUD */
+        .hud {
+            position: absolute; top: 10px; left: 10px; right: 10px;
+            display: flex; justify-content: space-between;
+        }
+        .badge { background: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; color: #2e7d32; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        /* QUESTION CARD */
+        .card { padding: 20px; text-align: center; background: #f1f8e9; }
+        .task-title { color: #33691e; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; font-size: 0.9em; letter-spacing: 1px; }
+        .question { color: #333; font-size: 1.1em; margin-bottom: 20px; }
+
+        /* GRID BUTTONS */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .tool-btn {
+            background: white; border: 2px solid #c5e1a5; border-radius: 12px; padding: 15px;
+            font-size: 1em; cursor: pointer; color: #558b2f; transition: 0.2s;
+        }
+        .tool-btn:hover { background: #dcedc8; transform: translateY(-3px); }
+        .tool-btn.correct { background: #a5d6a7; color: #1b5e20; border-color: #2e7d32; }
+        .tool-btn.wrong { background: #ef9a9a; color: #b71c1c; border-color: #c62828; }
+
+        /* ANIMATIONS */
+        @keyframes grow { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .grow-anim { animation: grow 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .wither-anim { animation: shake 0.4s; filter: sepia(1); }
+
     </style>
 </head>
 <body>
-    <h2>🌱 Nature & Bio Quiz</h2>
-    <div class="card">
-        <h3 style="color:#2e7d32; margin-top:0;">Question:</h3>
-        <p id="q" style="font-size:1.3em;">Loading...</p>
-        
-        <div id="opts">
-            <button class="opt" id="o0" onclick="c(0)"></button>
-            <button class="opt" id="o1" onclick="c(1)"></button>
-            <button class="opt" id="o2" onclick="c(2)"></button>
-            <button class="opt" id="o3" onclick="c(3)"></button>
-        </div>
+
+<div class="farm-container">
+    <div class="hud">
+        <div class="badge">Harvest: <span id="harvest-count">0</span>/3 🌾</div>
+        <div class="badge">Lives: <span id="lives">❤️❤️❤️</span></div>
     </div>
-    <br><a href="/" style="color:#2e7d32">← Back to Menu</a>
 
-    <script>
-        let correctIndex = -1;
-        async function load(){
-            // ASK ONLY FOR BIOLOGY
-            let r = await fetch('/api/get_question?subject=biology');
-            let d = await r.json();
+    <div class="sky">
+        <div class="plant" id="plant-emoji">🌱</div>
+    </div>
+    <div class="soil"></div>
 
-            if(!d.question) { document.getElementById('q').innerText = "No biology questions found in CSV!"; return; }
+    <div class="card">
+        <div class="task-title" id="task-type">Task: Fertilize Soil</div>
+        <div class="question" id="q-text">Loading farm data...</div>
+        <div class="grid" id="options-box"></div>
+    </div>
+</div>
 
-            document.getElementById('q').innerText = d.question;
-            for(let i=0; i<4; i++) document.getElementById('o'+i).innerText = d.options[i];
-            correctIndex = d.answer;
+<script>
+    const stages = ["🌱", "🌿", "🌳", "🍎"]; // Seed -> Sprout -> Tree -> Fruit
+    let currentStage = 0;
+    let harvested = 0;
+    let lives = 3;
+
+    const tasks = ["Analyze DNA 🧬", "Check Cells 🔬", "Identify Species 🐾", "Diagnose Patient 🩺"];
+
+    async function loadTask() {
+        const qText = document.getElementById("q-text");
+        const optBox = document.getElementById("options-box");
+        const plant = document.getElementById("plant-emoji");
+        const taskLabel = document.getElementById("task-type");
+
+        // Reset visual state
+        plant.className = "plant";
+        optBox.innerHTML = "";
+        taskLabel.innerText = "Task: " + tasks[Math.floor(Math.random() * tasks.length)];
+
+        try {
+            const res = await fetch(`/api/ai/get_question?subject=Biology&difficulty=Medium`);
+            const data = await res.json();
+            
+            qText.innerText = data.question;
+
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement("button");
+                btn.className = "tool-btn";
+                btn.innerText = opt;
+                btn.onclick = () => performTask(index, data.answer, btn);
+                optBox.appendChild(btn);
+            });
+        } catch(e) {
+            qText.innerText = "Tractor broke down (Connection Error).";
         }
+    }
 
-        function c(i){
-            if(i === correctIndex){
-                alert("🌿 Correct! Life finds a way.");
-                load();
+    function performTask(selected, correct, btn) {
+        const plant = document.getElementById("plant-emoji");
+        document.querySelectorAll(".tool-btn").forEach(b => b.disabled = true);
+
+        if (selected === correct) {
+            // SUCCESS: GROW
+            btn.classList.add("correct");
+            currentStage++;
+            
+            if (currentStage >= stages.length) {
+                // HARVEST TIME!
+                harvested++;
+                document.getElementById("harvest-count").innerText = harvested;
+                plant.innerText = "🧺"; // Basket
+                alert("Harvest Successful! +1 Crop");
+                currentStage = 0; // Reset to seed
             } else {
-                alert("🍂 Incorrect.");
+                plant.innerText = stages[currentStage];
+                plant.classList.add("grow-anim");
+            }
+            
+            if(harvested >= 3) {
+                alert("YOU WON! Best Farmer of 2026 🚜");
+                location.reload();
+            } else {
+                setTimeout(loadTask, 1500);
+            }
+
+        } else {
+            // FAILURE: WITHER
+            btn.classList.add("wrong");
+            plant.classList.add("wither-anim");
+            lives--;
+            updateLives();
+            
+            if (lives <= 0) {
+                alert("Game Over! Your farm went bankrupt.");
+                location.reload();
+            } else {
+                setTimeout(loadTask, 1500);
             }
         }
-        load();
-    </script>
+    }
+
+    function updateLives() {
+        let heartString = "";
+        for(let i=0; i<lives; i++) heartString += "❤️";
+        document.getElementById("lives").innerText = heartString;
+    }
+
+    loadTask();
+</script>
 </body>
 </html>

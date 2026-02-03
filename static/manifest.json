@@ -1,0 +1,15 @@
+{
+  "name": "LearnByGames",
+  "short_name": "LBG",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e3c72",
+  "theme_color": "#1e3c72",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2997/2997235.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

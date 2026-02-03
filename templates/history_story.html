@@ -1,51 +1,205 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>History Challenge</title>
+    <title>Time Detective</title>
     <style>
-        body{font-family:'Georgia', serif; background:#fff8e1; padding:20px; text-align:center;}
-        .parchment{background:#fff; border:1px solid #d7ccc8; padding:40px; max-width:600px; margin:20px auto; box-shadow:5px 5px 15px rgba(0,0,0,0.1); position:relative;}
-        .parchment:before { content:""; position:absolute; top:0; left:0; width:100%; height:5px; background:#8d6e63;}
-        .options-grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px; }
-        button{padding:15px; background:#795548; color:white; border:none; font-family:'Segoe UI', sans-serif; cursor:pointer; font-size:1rem;}
-        button:hover{background:#5d4037;}
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Cinzel:wght@700&display=swap');
+
+        body {
+            background-color: #2c241b;
+            background-image: radial-gradient(#3e3226 15%, transparent 16%), radial-gradient(#3e3226 15%, transparent 16%);
+            background-size: 60px 60px;
+            font-family: 'Courier Prime', monospace;
+            color: #d7c4bb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .case-file {
+            background: #fdfbf7;
+            color: #1a1a1a;
+            width: 100%;
+            max-width: 550px;
+            padding: 30px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border: 1px solid #ccc;
+            transform: rotate(-1deg);
+            position: relative;
+        }
+
+        /* PAPER TEXTURE EFFECT */
+        .case-file::before {
+            content: "";
+            position: absolute; top:0; left:0; right:0; bottom:0;
+            background: url('https://www.transparenttextures.com/patterns/aged-paper.png'); 
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* STAMP */
+        .stamp {
+            position: absolute;
+            top: 20px; right: 20px;
+            border: 3px solid #d32f2f;
+            color: #d32f2f;
+            padding: 5px 10px;
+            font-family: 'Cinzel', serif;
+            font-size: 1.2em;
+            transform: rotate(15deg);
+            opacity: 0.8;
+            border-radius: 4px;
+        }
+
+        /* HEADER */
+        h2 { font-family: 'Cinzel', serif; margin-top: 0; border-bottom: 2px solid #1a1a1a; padding-bottom: 10px; }
+        
+        .status-bar {
+            display: flex; justify-content: space-between; margin-bottom: 20px;
+            font-weight: bold; background: #eee; padding: 10px;
+        }
+        
+        /* CONTENT */
+        .scenario-text {
+            font-size: 1.1em; line-height: 1.6; margin-bottom: 25px;
+            border-left: 4px solid #1a1a1a; padding-left: 15px;
+        }
+
+        /* OPTIONS */
+        .options-list { display: flex; flex-direction: column; gap: 10px; }
+        
+        .detective-btn {
+            background: transparent;
+            border: 2px solid #1a1a1a;
+            padding: 12px;
+            font-family: 'Courier Prime', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.2s;
+            position: relative;
+            z-index: 2;
+        }
+
+        .detective-btn:hover { background: #1a1a1a; color: #fdfbf7; }
+        
+        /* FEEDBACK */
+        .solved { border-color: #2e7d32; color: #2e7d32; background: rgba(46, 125, 50, 0.1); }
+        .paradox { border-color: #c62828; color: #c62828; text-decoration: line-through; }
+
+        /* PORTAL ANIMATION */
+        @keyframes warp { 0% { filter: blur(0px); } 50% { filter: blur(4px) hue-rotate(90deg); } 100% { filter: blur(0px); } }
+        .warp-anim { animation: warp 0.8s; }
+
     </style>
 </head>
 <body>
-    <h2>📜 Time Traveler: History</h2>
-    <div class="parchment">
-        <p id="q" style="font-size:1.3em; line-height:1.6;">Loading history from CSV...</p>
-        
-        <div class="options-grid">
-            <button id="b0" onclick="c(0)"></button>
-            <button id="b1" onclick="c(1)"></button>
-            <button id="b2" onclick="c(2)"></button>
-            <button id="b3" onclick="c(3)"></button>
-        </div>
+
+<div class="case-file" id="game-panel">
+    <div class="stamp" id="mission-status">UNSOLVED</div>
+    
+    <h2>⏳ Chrono-Log: <span id="era-display">AD 2026</span></h2>
+    
+    <div class="status-bar">
+        <span>Timeline Stability: <span id="stability">100%</span></span>
+        <span>Repairs: <span id="repairs">0</span>/5</span>
     </div>
-    <br><a href="/" style="color:#5d4037; text-decoration:none;">← Back to Menu</a>
 
-    <script>
-        let ans = -1;
-        async function load(){
-            // ASK ONLY FOR HISTORY
-            let r = await fetch('/api/get_question?subject=history');
-            let d = await r.json();
+    <p><strong>Mission Brief:</strong> The timeline is fracturing. Identify the correct historical fact to stabilize reality.</p>
+
+    <div class="scenario-text" id="q-text">
+        Scanning temporal disturbances...
+    </div>
+
+    <div class="options-list" id="options-box"></div>
+</div>
+
+<script>
+    let stability = 100;
+    let repairs = 0;
+    
+    const eras = ["Ancient Egypt", "The Renaissance", "Industrial Revolution", "World War II", "Space Age"];
+
+    async function jumpTime() {
+        const qText = document.getElementById("q-text");
+        const optBox = document.getElementById("options-box");
+        const eraDisp = document.getElementById("era-display");
+        const stamp = document.getElementById("mission-status");
+        const panel = document.getElementById("game-panel");
+
+        // Visual Reset
+        panel.classList.remove("warp-anim");
+        void panel.offsetWidth; // Trigger reflow
+        panel.classList.add("warp-anim"); // Play warp effect
+
+        stamp.innerText = "UNSOLVED";
+        stamp.style.borderColor = "#d32f2f"; 
+        stamp.style.color = "#d32f2f";
+        
+        optBox.innerHTML = "";
+        
+        // Random Era Flavor Text
+        const currentEra = eras[Math.floor(Math.random() * eras.length)];
+        eraDisp.innerText = "Scanning: " + currentEra + "...";
+
+        try {
+            const res = await fetch(`/api/ai/get_question?subject=History&difficulty=Medium`);
+            const data = await res.json();
             
-            if(!d.question) { document.getElementById('q').innerText = "No history questions found in CSV!"; return; }
+            qText.innerText = data.question;
 
-            document.getElementById('q').innerText = d.question;
-            for(let i=0; i<4; i++) document.getElementById('b'+i).innerText = d.options[i];
-            ans = d.answer;
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement("button");
+                btn.className = "detective-btn";
+                btn.innerText = "◈ " + opt; // Bullet point style
+                btn.onclick = () => solveCase(index, data.answer, btn);
+                optBox.appendChild(btn);
+            });
+        } catch(e) {
+            qText.innerText = "Temporal Comms Down (Connection Error).";
         }
+    }
 
-        function c(i){
-            if(i === ans) { alert("Correct! History made."); load(); }
-            else { alert("Incorrect!"); }
+    function solveCase(selected, correct, btn) {
+        const stamp = document.getElementById("mission-status");
+        document.querySelectorAll(".detective-btn").forEach(b => b.disabled = true);
+
+        if (selected === correct) {
+            // SUCCESS
+            btn.classList.add("solved");
+            stamp.innerText = "STABILIZED";
+            stamp.style.borderColor = "#2e7d32";
+            stamp.style.color = "#2e7d32";
+            
+            repairs++;
+            document.getElementById("repairs").innerText = repairs;
+
+            if(repairs >= 5) {
+                setTimeout(() => alert("Mission Complete! Welcome back to the present."), 500);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                setTimeout(jumpTime, 1500);
+            }
+
+        } else {
+            // FAILURE
+            btn.classList.add("paradox");
+            stability -= 25;
+            document.getElementById("stability").innerText = stability + "%";
+            
+            if(stability <= 0) {
+                alert("CRITICAL PARADOX! You are lost in time forever.");
+                location.reload();
+            } else {
+                setTimeout(jumpTime, 2000);
+            }
         }
-        load();
-    </script>
+    }
+
+    jumpTime();
+</script>
 </body>
 </html>

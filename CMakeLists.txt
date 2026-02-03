@@ -8,4 +8,4 @@ include_directories(include/crow_source/include)
 
 add_executable(LearnByGames main.cpp)
 
-target_link_libraries(LearnByGames pthread)
+target_link_libraries(LearnByGames pthread sqlite3)

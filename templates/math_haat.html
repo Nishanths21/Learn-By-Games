@@ -1,57 +1,299 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Math Haat</title>
+    <title>Math Haat - Market Challenge</title>
     <style>
-        body{text-align:center;font-family:'Segoe UI', sans-serif;background:#fff3e0; padding:20px;}
-        .card{background:white; max-width:400px; margin:0 auto; padding:30px; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
-        input{font-size:1.5rem; width:120px; padding:5px; text-align:center; border:2px solid #ddd; border-radius:5px;}
-        .big-text{font-size:1.4em; margin:20px 0;}
-        button{background:#e67e22; color:white; padding:10px 30px; border:none; border-radius:5px; font-size:1.2em; cursor:pointer; margin-top:10px;}
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: #fff3e0; 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .game-container {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(230, 81, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* HEADER & HUD */
+        .hud {
+            background: #ff9800;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .wallet { font-size: 1.2em; background: rgba(0,0,0,0.1); padding: 5px 15px; border-radius: 20px; }
+        .basket-count { font-size: 1em; }
+
+        /* SHOPKEEPER AREA */
+        .shop-area {
+            text-align: center;
+            padding: 20px;
+            background: #fff8e1;
+            border-bottom: 2px dashed #ffe0b2;
+            position: relative;
+        }
+
+        .shopkeeper { font-size: 4em; display: block; margin-bottom: 10px; transition: transform 0.2s; cursor: pointer; }
+        .shopkeeper:hover { transform: scale(1.1); }
+        
+        .bubble {
+            background: white;
+            border: 2px solid #ffcc80;
+            border-radius: 15px;
+            padding: 15px;
+            display: inline-block;
+            position: relative;
+            max-width: 80%;
+            font-size: 0.95em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .bubble::after {
+            content: ''; position: absolute; top: -10px; left: 50%;
+            border-width: 0 10px 10px; border-style: solid; border-color: transparent transparent #ffcc80;
+            transform: translateX(-50%);
+        }
+
+        /* QUESTION AREA */
+        .question-zone { padding: 20px; text-align: center; }
+        .item-display { font-size: 1.2em; color: #e65100; margin-bottom: 15px; font-weight: bold; }
+        .math-problem { font-size: 1.1em; margin-bottom: 20px; color: #555; }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        .btn {
+            background: white;
+            border: 2px solid #eee;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            color: #444;
+        }
+        .btn:hover { background: #fff3e0; border-color: #ff9800; transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* FEEDBACK STATES */
+        .correct { background: #c8e6c9 !important; border-color: #4caf50 !important; color: #2e7d32 !important; }
+        .wrong { background: #ffcdd2 !important; border-color: #e53935 !important; color: #c62828 !important; }
+
+        /* END SCREEN */
+        .modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 10;
+        }
+        .modal h2 { margin-top: 0; color: #e65100; }
+        .home-btn { 
+            margin-top: 20px; text-decoration: none; background: #333; color: white; 
+            padding: 10px 25px; border-radius: 20px; font-size: 0.9em; 
+        }
+
+        /* ANIMATIONS */
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } 100% { transform: translateX(0); } }
+        .shake-anim { animation: shake 0.3s; }
+
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
+        .float-text { position: absolute; color: red; font-weight: bold; font-size: 1.2em; pointer-events: none; animation: floatUp 1s forwards; }
     </style>
 </head>
 <body>
-    <h2>🥦 Sunday Market (Haat)</h2>
-    <div class="card">
-        <p>Calculate the total bill:</p>
-        <div class="big-text">
-            <span id="qty" style="color:#d35400; font-weight:bold">...</span> kg of 
-            <span id="item" style="font-weight:bold">...</span> <br>
-            @ ₹<span id="price" style="color:#27ae60; font-weight:bold">...</span> /kg
-        </div>
-        <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
-        <p>Total Cost: ₹ <input type="number" id="ans"></p>
-        <button onclick="check()">Check Bill</button>
-        <h3 id="res"></h3>
-    </div>
-    <br><a href="/" style="color:#795548">← Back to Menu</a>
 
-    <script>
-        let cor=0;
-        async function load(){
-            let d=await(await fetch('/api/math/problem')).json(); 
-            document.getElementById('item').innerText=d.item;
-            document.getElementById('qty').innerText=d.quantity;
-            document.getElementById('price').innerText=d.price_per_kg;
-            cor=d.correct_answer;
-            document.getElementById('ans').value='';
-            document.getElementById('res').innerText='';
-            document.getElementById('ans').focus();
+<div class="game-container">
+    <div class="hud">
+        <div class="basket-count">🧺 Items: <span id="item-count">0</span>/5</div>
+        <div class="wallet">💰 ₹<span id="money">1000</span></div>
+    </div>
+
+    <div class="shop-area">
+        <div class="shopkeeper" id="shopkeeper-face">👳🏽‍♂️</div>
+        <div class="bubble" id="shop-dialogue">
+            "Namaste! Solving math gets you the best prices today."
+        </div>
+    </div>
+
+    <div class="question-zone">
+        <div class="item-display" id="current-item">...</div>
+        <div class="math-problem" id="q-text">Loading the market...</div>
+        
+        <div class="options-grid" id="options-box"></div>
+    </div>
+
+    <div class="modal" id="game-over-modal">
+        <h2 id="modal-title">Game Over!</h2>
+        <p id="modal-msg"></p>
+        <button class="btn" onclick="location.reload()" style="background:#ff9800; color:white; border:none;">Play Again</button>
+        <a href="/" class="home-btn">Exit Market</a>
+    </div>
+</div>
+
+<script>
+    // --- GAME STATE ---
+    let wallet = 1000;
+    let itemsCollected = 0;
+    const GOAL = 5;
+    const COST_PER_ITEM = 100; // Base cost
+    const PENALTY = 200;       // Cost of being "scammed" (wrong answer)
+    
+    // Fun items to "buy"
+    const marketItems = ["Fresh Mangoes 🥭", "Spicy Chillies 🌶️", "Silk Saree 👘", "Clay Pot 🏺", "Sweet Jalebi 🥨", "Bag of Rice 🍚"];
+    
+    // Shopkeeper quotes
+    const quotes = {
+        start: "Solve this to get a discount!",
+        correct: ["Good deal!", "You are sharp!", "Sold!", "Here you go!"],
+        wrong: ["No no no! Wrong calculation!", "That's not enough money!", "I can't sell for that!", "Check your math!"]
+    };
+
+    // --- AUDIO EFFECTS (Optional placeholders) ---
+    function playSound(type) {
+        // In a real app, you'd add Audio() objects here.
+        // type: 'coin', 'wrong', 'win'
+    }
+
+    async function loadLevel() {
+        const qText = document.getElementById("q-text");
+        const optBox = document.getElementById("options-box");
+        const itemDisplay = document.getElementById("current-item");
+        const dialog = document.getElementById("shop-dialogue");
+        const face = document.getElementById("shopkeeper-face");
+
+        // 1. Reset UI for new turn
+        face.innerText = "👳🏽‍♂️";
+        dialog.innerText = quotes.start;
+        optBox.innerHTML = ""; 
+        qText.style.opacity = "0.5";
+
+        // 2. Pick a random item to buy
+        const currentItem = marketItems[Math.floor(Math.random() * marketItems.length)];
+        itemDisplay.innerText = "Buying: " + currentItem;
+
+        // 3. Fetch Question from C++ Backend
+        try {
+            const res = await fetch(`/api/ai/get_question?subject=Mathematics&difficulty=Medium`);
+            const data = await res.json();
+
+            qText.innerText = data.question;
+            qText.style.opacity = "1";
+
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement("button");
+                btn.className = "btn";
+                btn.innerText = opt;
+                btn.onclick = () => handleAnswer(index, data.answer, btn);
+                optBox.appendChild(btn);
+            });
+
+        } catch (e) {
+            qText.innerText = "The market is closed (Connection Error).";
         }
-        function check(){
-            let v=parseInt(document.getElementById('ans').value); 
-            if(v===cor){
-                document.getElementById('res').innerText="✅ Correct! Good calculation.";
-                document.getElementById('res').style.color="green";
-                setTimeout(load,1500);
-            }else{
-                document.getElementById('res').innerText="❌ Wrong! Try again.";
-                document.getElementById('res').style.color="red";
-            }
+    }
+
+    function handleAnswer(selectedIndex, correctIndex, btnElement) {
+        const allBtns = document.querySelectorAll(".btn");
+        allBtns.forEach(b => b.disabled = true);
+        
+        const dialog = document.getElementById("shop-dialogue");
+        const face = document.getElementById("shopkeeper-face");
+
+        if (selectedIndex === correctIndex) {
+            // --- CORRECT ---
+            btnElement.classList.add("correct");
+            face.innerText = "🤑";
+            dialog.innerText = quotes.correct[Math.floor(Math.random() * quotes.correct.length)];
+            
+            // Logic
+            itemsCollected++;
+            wallet -= 50; // Small cost for the item (Discounted price!)
+            updateHUD();
+            
+            if (itemsCollected >= GOAL) endGame(true);
+            else setTimeout(loadLevel, 1500);
+
+        } else {
+            // --- WRONG ---
+            btnElement.classList.add("wrong");
+            face.innerText = "😠";
+            dialog.innerText = quotes.wrong[Math.floor(Math.random() * quotes.wrong.length)];
+            
+            // Visual feedback for losing money
+            showFloatingText("- ₹" + PENALTY, btnElement);
+            document.querySelector(".game-container").classList.add("shake-anim");
+            setTimeout(() => document.querySelector(".game-container").classList.remove("shake-anim"), 400);
+
+            // Logic
+            wallet -= PENALTY;
+            updateHUD();
+
+            if (wallet <= 0) endGame(false);
+            else setTimeout(loadLevel, 2000);
         }
-        load();
-    </script>
+    }
+
+    function updateHUD() {
+        document.getElementById("item-count").innerText = itemsCollected;
+        const moneyEl = document.getElementById("money");
+        moneyEl.innerText = wallet;
+        if(wallet < 200) moneyEl.style.color = "red";
+    }
+
+    function showFloatingText(text, targetBtn) {
+        const floatEl = document.createElement("div");
+        floatEl.className = "float-text";
+        floatEl.innerText = text;
+        
+        const rect = targetBtn.getBoundingClientRect();
+        floatEl.style.left = (rect.left + rect.width/2 - 20) + "px";
+        floatEl.style.top = rect.top + "px";
+        
+        document.body.appendChild(floatEl);
+        setTimeout(() => floatEl.remove(), 1000);
+    }
+
+    function endGame(win) {
+        const modal = document.getElementById("game-over-modal");
+        const title = document.getElementById("modal-title");
+        const msg = document.getElementById("modal-msg");
+        
+        modal.style.display = "flex";
+        
+        if (win) {
+            title.innerText = "Market Champion! 🏆";
+            msg.innerText = `You bought all ${GOAL} items and saved ₹${wallet}!`;
+        } else {
+            title.innerText = "Bankrupt! 💸";
+            msg.innerText = "You ran out of money. The shopkeeper kicked you out.";
+        }
+    }
+
+    // Start the game
+    loadLevel();
+</script>
+
 </body>
 </html>
